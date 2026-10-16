@@ -75,6 +75,16 @@ beforeEach(() => {
 });
 
 describe('AppTray', () => {
+  it('opens AI chat while hiding room controls in the local build', () => {
+    const openAi = vi.fn();
+    new AppTray('icon.png', { ...handlers, roomsEnabled: false, openAi });
+    const items = created[0].menus.at(-1) as Item[];
+    expect(items.some((i) => i.label === strings('en').trayRoom)).toBe(false);
+    const item = items.find((i) => i.label === strings('en').aiChat);
+    expect(item).toBeDefined();
+    item?.click?.({});
+    expect(openAi).toHaveBeenCalledOnce();
+  });
   it('renders mode changes while alive', () => {
     const tray = new AppTray('icon.png', handlers);
     const before = created[0].images.length;

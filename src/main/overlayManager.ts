@@ -46,6 +46,8 @@ const RAISING_CHANNELS: ReadonlySet<OverlayChannel> = new Set<OverlayChannel>(['
  */
 export class OverlayManager extends EventEmitter {
   readonly missingAssets = new Set<string>();
+  /** Runs before a user ping is drawn; screenshots must not contain the new marker. */
+  beforeLocalPing?: (ping: SharedPing) => void | Promise<void>;
   private readonly windows = new Map<number, BrowserWindow>();
   private maps: DisplayMap[] = [];
   private numberedList: NumberedDisplay[] = [];
@@ -67,8 +69,7 @@ export class OverlayManager extends EventEmitter {
       if (!p || !isPingId(p.id) || !isNum(p.x) || !isNum(p.y)) return;
       const displayId = this.displayOf(event.sender);
       if (displayId === undefined) return;
-      this.emit('shared', { id: p.id, displayId, x: p.x, y: p.y } satisfies SharedPing);
-      this.unkeepElsewhere(displayId); // the wheel's own overlay already swapped its kept ping for this one
+      this.placeLocalPing({ id: p.id, displayId, x: p.x, y: p.y });
     });
     ipcMain.on(OVERLAY_EMOTED, (event, raw: unknown) => {
       const p = raw as { ref?: unknown; x?: unknown; y?: unknown } | null;
@@ -119,10 +120,7 @@ export class OverlayManager extends EventEmitter {
           this.emit('sharedEmote', { ref, displayId: p.displayId, x: p.x, y: p.y } satisfies SharedEmote);
           break;
         }
-        const keep = this.settings.keepLastPing ? { keep: true } : {};
-        this.send(p.displayId, 'ping:spawn', { id: this.settings.clickPingId, x: p.x, y: p.y, ...keep });
-        this.unkeepElsewhere(p.displayId);
-        this.emit('shared', { id: this.settings.clickPingId, displayId: p.displayId, x: p.x, y: p.y } satisfies SharedPing);
+        this.placeLocalPing({ id: this.settings.clickPingId, displayId: p.displayId, x: p.x, y: p.y });
         break;
       }
       case 'cancel':
@@ -136,6 +134,38 @@ export class OverlayManager extends EventEmitter {
   previewPing(id: PingId): void {
     const d = screen.getPrimaryDisplay();
     this.send(d.id, 'ping:spawn', { id, x: d.bounds.width / 2, y: d.bounds.height / 2 });
+  }
+
+  /** Automatic pings never trigger another AI task or leave this machine. */
+  spawnAutomation(p: SharedPing): void {
+    this.send(p.displayId, 'ping:spawn', { id: p.id, x: p.x, y: p.y });
+  }
+
+  /** Hides only our transparent overlays while the desktop is captured. */
+  async withoutOverlays<T>(capture: () => Promise<T>): Promise<T> {
+    const visible = [...this.windows.values()].filter((w) => !w.isDestroyed() && w.isVisible());
+    for (const w of visible) w.hide();
+    try {
+      return await capture();
+    } finally {
+      for (const w of visible) if (!w.isDestroyed()) w.showInactive();
+    }
+  }
+
+  private placeLocalPing(p: SharedPing): void {
+    const draw = (): void => {
+      const keep = this.settings.keepLastPing ? { keep: true } : {};
+      this.send(p.displayId, 'ping:spawn', { id: p.id, x: p.x, y: p.y, ...keep });
+      this.unkeepElsewhere(p.displayId);
+      this.emit('shared', p);
+    };
+    try {
+      const before = this.beforeLocalPing?.(p);
+      if (before) void before.then(draw, draw);
+      else draw();
+    } catch {
+      draw(); // capture failures must never suppress the user's ordinary ping
+    }
   }
 
   /** A room member's ping, already mapped onto one of our displays. */

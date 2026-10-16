@@ -101,6 +101,30 @@ beforeEach(async () => {
 });
 
 describe('OverlayManager wheels', () => {
+  it('captures a local missing ping before showing it and shares it only once', async () => {
+    let finish: () => void = () => undefined;
+    mgr.beforeLocalPing = () => new Promise<void>((resolve) => { finish = resolve; });
+    const shared: unknown[] = [];
+    mgr.on('shared', (p) => shared.push(p));
+    h.handlers.get(OVERLAY_PINGED)?.({ sender: h.windows[0].webContents }, { id: 'missing', x: 42, y: 80 });
+    expect(sent(0)).toEqual([]);
+    expect(shared).toEqual([]);
+    finish();
+    await vi.waitFor(() => expect(sent(0)).toEqual([['ping:spawn', { id: 'missing', x: 42, y: 80 }]]));
+    expect(shared).toEqual([{ id: 'missing', displayId: 1, x: 42, y: 80 }]);
+  });
+
+  it('does not feed automated completion pings back into local triggers', () => {
+    const local = vi.fn();
+    mgr.beforeLocalPing = local;
+    const shared = vi.fn();
+    mgr.on('shared', shared);
+    mgr.spawnAutomation({ id: 'omw', displayId: 2, x: 50, y: 60 });
+    expect(sent(1)).toEqual([['ping:spawn', { id: 'omw', x: 50, y: 60 }]]);
+    expect(local).not.toHaveBeenCalled();
+    expect(shared).not.toHaveBeenCalled();
+  });
+
   it('forwards the open wheel\'s kind with every move and the release', () => {
     mgr.handle({ type: 'wheelOpen', x: 100, y: 200, wheel: 'emote' });
     mgr.handle({ type: 'wheelMove', x: 110, y: 210, wheel: 'emote' });
@@ -198,7 +222,7 @@ describe('OverlayManager kept ping', () => {
     keepOn();
     h.handlers.get(OVERLAY_PINGED)!({ sender: h.windows[1].webContents }, { id: 'danger', x: 1, y: 2 });
     expect(sent(0)).toEqual([['ping:unkeep', null]]);
-    expect(sent(1)).toEqual([]);
+    expect(sent(1)).toEqual([['ping:spawn', { id: 'danger', x: 1, y: 2, keep: true }]]);
   });
 
   it('drops it everywhere on pause, and sends nothing while the setting is off', () => {

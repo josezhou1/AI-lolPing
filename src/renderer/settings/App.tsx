@@ -1,6 +1,6 @@
 import { Dropdown, FluentProvider, Option, webDarkTheme, webLightTheme } from '@fluentui/react-components';
 import {
-  ArrowMove24Regular, ArrowSync24Regular, CursorClick24Regular, DataPie24Regular, Games24Regular, Info24Regular, Keyboard24Regular, MusicNote224Regular, Pin24Regular,
+  ArrowMove24Regular, ArrowSync24Regular, BrainCircuitRegular, CursorClick24Regular, DataPie24Regular, Games24Regular, Info24Regular, Keyboard24Regular, MusicNote224Regular, Pin24Regular,
   Power24Regular, ResizeLarge24Regular, Rocket24Regular, Settings24Regular, Speaker224Regular, SpeakerMute24Regular,
   Timer24Regular, Cursor24Regular, Emoji24Regular, LocalLanguage24Regular, PeopleCommunity24Regular,
 } from '@fluentui/react-icons';
@@ -25,6 +25,8 @@ import { TextContext, useText } from './text';
 import { macDarkTheme, macLightTheme } from './macTheme';
 import { useAppState, type Update } from './useAppState';
 import { useUpdateState } from './useUpdateState';
+import { ROOMS_ENABLED } from '../../shared/features';
+import { AiSettingsSection } from '../chat/ModelSettings';
 
 const PLATFORM = api.platform;
 const MAC = PLATFORM === 'mac';
@@ -37,7 +39,8 @@ const SECTIONS: { id: string; label: (t: Strings) => string; icon: ReactNode }[]
   { id: 'pings', label: (t) => t.navPings, icon: <Speaker224Regular /> },
   { id: 'wheel', label: (t) => t.navWheel, icon: <DataPie24Regular /> },
   { id: 'emotes', label: (t) => t.navEmotes, icon: <Emoji24Regular /> },
-  { id: 'room', label: (t) => t.navRoom, icon: <PeopleCommunity24Regular /> },
+  ROOMS_ENABLED ? { id: 'room', label: (t) => t.navRoom, icon: <PeopleCommunity24Regular /> }
+    : { id: 'ai', label: (t) => t.aiModels, icon: <BrainCircuitRegular fontSize={24} /> },
   { id: 'app', label: (t) => t.navApp, icon: <Settings24Regular /> },
 ];
 
@@ -64,7 +67,7 @@ function useDarkMode(): boolean {
   return dark;
 }
 
-export function App() {
+export function App({ embedded = false, section }: { embedded?: boolean; section?: string }) {
   const dark = useDarkMode();
   const { settings, status, update } = useAppState();
   useEffect(() => {
@@ -75,19 +78,22 @@ export function App() {
     <FluentProvider theme={theme} style={{ background: 'transparent', height: '100%' }}>
       {settings && status ? (
         <TextContext.Provider value={strings(resolveLang(settings.language, navigator.language), PLATFORM)}>
-          <SettingsPage settings={settings} status={status} update={update} />
+          <SettingsPage settings={settings} status={status} update={update} embedded={embedded} section={section} />
         </TextContext.Provider>
       ) : null}
     </FluentProvider>
   );
 }
 
-function SettingsPage({ settings: s, status, update }: { settings: Settings; status: AppStatus; update: Update }) {
+function SettingsPage({ settings: s, status, update, embedded, section }: {
+  settings: Settings; status: AppStatus; update: Update; embedded: boolean; section?: string;
+}) {
   const t = useText();
   useEffect(() => {
     document.documentElement.lang = t.lang; // picks the right CJK glyphs
   }, [t]);
   const mainRef = useRef<HTMLElement>(null);
+  const sections = embedded ? SECTIONS.filter((item) => item.id !== 'ai') : SECTIONS;
   const updateState = useUpdateState() ?? null; // no update checker in this build, or not known yet: no update controls
   const [active, setActive] = useState(SECTIONS[0].id);
   const off = !status.enabled || status.helper === 'failed';
@@ -101,16 +107,16 @@ function SettingsPage({ settings: s, status, update }: { settings: Settings; sta
 
   useEffect(() => {
     const show = (id: string) => document.getElementById(id)?.scrollIntoView({ behavior: 'smooth' });
-    const initial = location.hash.slice(1);
+    const initial = section ?? (embedded ? '' : location.hash.slice(1));
     if (initial) requestAnimationFrame(() => show(initial));
     return api.onShowSection(show);
-  }, []);
+  }, [embedded, section]);
 
   const onScroll = () => {
     const main = mainRef.current;
     if (!main) return;
     let current = SECTIONS[0].id;
-    for (const sec of SECTIONS) {
+    for (const sec of sections) {
       const el = document.getElementById(sec.id);
       if (el && el.offsetTop - main.offsetTop - 40 <= main.scrollTop) current = sec.id;
     }
@@ -118,20 +124,20 @@ function SettingsPage({ settings: s, status, update }: { settings: Settings; sta
   };
 
   return (
-    <div className="app">
-      <div className="titlebar">
+    <div className={`app${embedded ? ' settings-embedded' : ''}`}>
+      {!embedded && <div className="titlebar">
         <img src={textureUrl('generic_ping')} alt="" />
         lolPing
-      </div>
-      <nav className="side">
-        <div className="brand">
+      </div>}
+      <nav className={embedded ? 'settings-tabs' : 'side'} aria-label={t.pageTitle}>
+        {!embedded && <div className="brand">
           <img src={textureUrl('pingwheel_basicpingrender')} alt="" />
           <div>
             <b>lolPing</b>
             <span className="desc">{t.tagline}</span>
           </div>
-        </div>
-        {SECTIONS.map((sec) => (
+        </div>}
+        {sections.map((sec) => (
           <button key={sec.id} className={`navItem${active === sec.id ? ' sel' : ''}`} onClick={() => document.getElementById(sec.id)?.scrollIntoView({ behavior: 'smooth' })}>
             {sec.icon}
             {sec.label(t)}
@@ -204,8 +210,9 @@ function SettingsPage({ settings: s, status, update }: { settings: Settings; sta
         <div className="section" id="emotes">{t.navEmotes}</div>
         <EmoteSection settings={s} update={update} lengthUnit={LENGTH_UNIT} />
 
-        <div className="section" id="room">{t.navRoom}</div>
-        <RoomSection settings={s} update={update} />
+        {ROOMS_ENABLED ? <><div className="section" id="room">{t.navRoom}</div>
+          <RoomSection settings={s} update={update} /></> : !embedded ? <><div className="section" id="ai">{t.aiModels}</div>
+          <AiSettingsSection t={t} /></> : null}
 
         <div className="section" id="app">{t.navApp}</div>
         <SwitchRow icon={<Rocket24Regular />} title={t.launchAtStartup} description={t.launchAtStartupDesc}

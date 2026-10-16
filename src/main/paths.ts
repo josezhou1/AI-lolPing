@@ -3,7 +3,7 @@ import { join } from 'node:path';
 import { platformOf, type Platform } from '../shared/platform';
 import { APP_SCHEME } from './appProtocol';
 
-export type Page = 'overlay' | 'settings';
+export type Page = 'overlay' | 'settings' | 'chat';
 
 export const PLATFORM: Platform = platformOf(process.platform);
 export const IS_MAC = PLATFORM === 'mac';
@@ -20,7 +20,7 @@ export const helperExePath = (): string =>
 export const buildResourcePath = (file: string): string =>
   app.isPackaged ? join(process.resourcesPath, file) : join(app.getAppPath(), 'build', file);
 
-export const preloadPath = (name: Page): string => join(__dirname, '../preload', `${name}.js`);
+export const preloadPath = (name: Exclude<Page, 'chat'>): string => join(__dirname, '../preload', `${name}.js`);
 
 /** Files from assets/ (in production they are copied into out/renderer by Vite's publicDir). */
 export const assetPath = (...parts: string[]): string =>

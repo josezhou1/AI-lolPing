@@ -7,6 +7,7 @@ type Listener = (payload: never) => void;
 const listeners = new Map<OverlayChannel, Listener[]>();
 
 const api: OverlayApi = {
+  routePings: false,
   on(channel, cb) {
     listeners.set(channel, [...(listeners.get(channel) ?? []), cb as Listener]);
   },

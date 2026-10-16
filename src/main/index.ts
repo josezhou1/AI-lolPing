@@ -4,6 +4,7 @@ import { readFileSync } from 'node:fs';
 import { userInfo } from 'node:os';
 import { join } from 'node:path';
 import { resolveLang, strings, type Strings } from '../shared/i18n';
+import { ROOMS_ENABLED } from '../shared/features';
 import { SETTINGS_CH, type About, type AppStatus } from '../shared/ipc';
 import { announcedEmoteHashes } from '../shared/emotes';
 import { hotkeyLabel } from '../shared/keys';
@@ -13,6 +14,8 @@ import { formatRoomCode, parseRoomCode } from '../shared/roomCode';
 import { overlaySettings, type Settings } from '../shared/settings';
 import { updateErrorText, type UpdateState } from '../shared/update';
 import { registerAppScheme, serveAppScheme } from './appProtocol';
+import { startAiIntegration } from './aiIntegration';
+import { openAiWindow } from './aiWindow';
 import { resolveTarget, toShared } from './displayNumbers';
 import { EmoteCache } from './emoteCache';
 import { EmoteLibrary, resolveEmoteArt } from './emoteLibrary';
@@ -50,8 +53,8 @@ app.setAppUserModelId('com.lolping.app');
 if (!app.requestSingleInstanceLock()) {
   app.quit();
 } else {
-  app.on('second-instance', () => openSettingsWindow());
-  app.on('activate', () => openSettingsWindow()); // macOS: opened again from Finder or Launchpad while running
+  app.on('second-instance', () => { openAiWindow(); });
+  app.on('activate', () => { openAiWindow(); }); // macOS: opened again from Finder or Launchpad while running
   void app.whenReady().then(start);
 }
 
@@ -112,6 +115,7 @@ function start(): void {
       }),
   );
   overlays.start();
+  const ai = startAiIntegration(store, overlays, text);
   const bridge = new InputBridge({ command: helperExePath() });
 
   // Updates: only in an installed build, or in a development build pointed at a test server with LOLPING_UPDATE_TEST_URL.
@@ -246,6 +250,8 @@ function start(): void {
     assetPath('textures', 'generic_ping.png'),
     {
       openSettings: () => openSettingsWindow(),
+      openAi: () => { openAiWindow(); },
+      roomsEnabled: ROOMS_ENABLED,
       setEnabled: (on) => setEnabled(on),
       retryHelper: startHelper,
       quit: () => app.quit(),
@@ -297,11 +303,13 @@ function start(): void {
   overlays.on('displays', pushRoom);
   room.on('remotePing', (p) => overlays.spawnRemote(p));
   overlays.on('shared', (p: SharedPing) => {
+    if (!ROOMS_ENABLED) return;
     const shared = toShared(overlays.numbered(), p.displayId, p.x, p.y);
     if (shared) room.sendPing(p.id, shared);
   });
   room.on('remoteEmote', (p) => overlays.spawnRemoteEmote(p));
   overlays.on('sharedEmote', (p: SharedEmote) => {
+    if (!ROOMS_ENABLED) return;
     const shared = toShared(overlays.numbered(), p.displayId, p.x, p.y);
     if (shared) room.sendEmote(p.ref, shared);
   });
@@ -316,8 +324,10 @@ function start(): void {
     else overlays.toast(t.toastMemberLost(n.name), code);
   });
   powerMonitor.on('resume', () => {
-    lan.rebind();
-    relay.wake();
+    if (ROOMS_ENABLED) {
+      lan.rebind();
+      relay.wake();
+    }
   });
 
   function pushStatus(): void {
@@ -382,7 +392,7 @@ function start(): void {
       pushRoom();
     }
     if (s.allowInternet !== previous.allowInternet) {
-      room.setInternetAllowed(s.allowInternet);
+      room.setInternetAllowed(ROOMS_ENABLED && s.allowInternet);
       pushRoom();
     }
     if (app.isPackaged && s.launchAtStartup !== previous.launchAtStartup) {
@@ -424,13 +434,13 @@ function start(): void {
       : undefined,
     room: {
       state: roomState,
-      create: () => room.create(),
-      join: (t) => room.join(t),
+      create: () => ROOMS_ENABLED ? room.create() : Promise.resolve(),
+      join: (t) => ROOMS_ENABLED ? room.join(t) : Promise.resolve({ ok: false, error: 'invalid' } as const),
       leave: () => room.leave(),
       mute: (peer, on) => room.muteMember(peer, on),
       clipboardCode,
       copyCode: copyRoomCode,
-      retryInternet: () => relay.retryNow(),
+      retryInternet: () => { if (ROOMS_ENABLED) relay.retryNow(); },
     },
   });
   // The page can't report that it went away mid-capture (window closed, renderer crashed): release the suspend here.
@@ -445,15 +455,15 @@ function start(): void {
   else waitForAccess();
   pushStatus();
   syncRoomFlags();
-  room.setInternetAllowed(settings.allowInternet);
+  room.setInternetAllowed(ROOMS_ENABLED && settings.allowInternet);
   pushRoom();
-  if (settings.rejoinRoom && settings.lastRoomCode) void room.join(settings.lastRoomCode);
+  if (ROOMS_ENABLED && settings.rejoinRoom && settings.lastRoomCode) void room.join(settings.lastRoomCode);
   if (IS_MAC) {
     // A menu bar app: open settings only when there is something to do, otherwise point at the menu bar icon.
     if (store.firstRun || !trusted()) openSettingsWindow();
     else overlays.toast(text().toastMenuBar, text().toastMenuBarBody);
   } else if (!process.argv.includes('--hidden')) {
-    openSettingsWindow();
+    openAiWindow();
   }
 
   updater?.start();
@@ -471,6 +481,6 @@ function start(): void {
     stopWaitingForAccess();
     tray.destroy();
     overlays.destroy();
-    void Promise.allSettled([bridge.stop(), store.flush(), lan.whenClosed(), relay.whenClosed()]).then(() => app.exit(0));
+    void Promise.allSettled([bridge.stop(), ai.close(), store.flush(), lan.whenClosed(), relay.whenClosed()]).then(() => app.exit(0));
   });
 }

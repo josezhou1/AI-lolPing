@@ -105,7 +105,7 @@ window.overlay.on('wheel:release', (p) => {
     window.overlay.reportEmote(chosen.key, chosen.x, chosen.y);
   } else {
     const def = pingById(chosen.key) ?? fallbackPing;
-    ping(def, chosen.x, chosen.y, undefined, settings.keepLastPing);
+    if (!window.overlay.routePings) ping(def, chosen.x, chosen.y, undefined, settings.keepLastPing);
     window.overlay.reportPing(def.id, chosen.x, chosen.y);
   }
 });

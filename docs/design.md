@@ -1,5 +1,8 @@
 # lolPing — Design Spec
 
+The AI-lolPing branch adds a separate AI chat window, configurable model services, screen interpretation and local vision
+timers. Rooms are disabled in this personal build. See [the AI design](ai-ping-feature-design.zh-CN.md).
+
 **Date:** 2026-10-01
 **Status:** Implemented in v0.1.0; wheel customization (Bait, Vision Cleared, drag-and-drop slots) added in v0.2.1; rooms over LAN added in v0.3.0 (§12); emotes added in v0.5.0 (§13); foreign-chord pass-through and the fullscreen pause added in v0.5.1; custom emote stills travelling between room members added in v0.5.2 (§13)
 

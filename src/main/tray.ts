@@ -11,6 +11,8 @@ export interface MacTrayIcons {
 }
 
 export interface TrayHandlers {
+  openAi?(): void;
+  roomsEnabled?: boolean;
   openSettings(): void;
   setEnabled(on: boolean): void;
   retryHelper(): void;
@@ -163,7 +165,8 @@ export class AppTray {
     if (failed) items.push({ label: t.trayRestart, click: () => this.handlers.retryHelper() });
     items.push(
       { type: 'separator' },
-      { label: t.trayRoom, submenu: this.roomMenu() },
+      ...(this.handlers.openAi ? [{ label: t.aiChat, click: () => this.handlers.openAi?.() }] : []),
+      ...(this.handlers.roomsEnabled !== false ? [{ label: t.trayRoom, submenu: this.roomMenu() }] : []),
       { label: t.traySettings, click: () => this.handlers.openSettings() },
       { label: t.trayQuit, click: () => this.handlers.quit() },
     );

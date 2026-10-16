@@ -1,4 +1,5 @@
 import { DEFAULT_CLICK_EMOTE, DEFAULT_EMOTE_WHEEL } from './emoteCatalog';
+import { DEFAULT_AI_CONFIG, normalizeAiConfig, type AiConfig } from './ai';
 import {
   CUSTOM_NAME_MAX, MAX_CUSTOM_EMOTES, customHash, isCustomRef, normalizeClickEmote, normalizeEmoteWheel,
   type CustomEmote, type EmoteRef,
@@ -25,6 +26,7 @@ export const keyboardTriggers = (platform: Platform): NamedTrigger[] =>
   platform !== 'win' ? ['alt', 'ctrl', 'shift', 'win'] : ['alt', 'ctrl', 'shift', 'win', 'capslock'];
 
 export interface Settings {
+  ai: AiConfig;
   version: 1;
   enabledOnStart: boolean;
   trigger: TriggerKey;
@@ -85,6 +87,7 @@ export interface Identity {
 }
 
 export const DEFAULT_SETTINGS: Settings = {
+  ai: { ...DEFAULT_AI_CONFIG, profiles: [] },
   version: 1,
   enabledOnStart: true,
   trigger: 'alt',
@@ -228,6 +231,7 @@ export function normalizeSettings(raw: unknown, platform: Platform = 'win', iden
   const emote = emoteKey(r.emoteTrigger, platform);
   const custom = customEmotes(r.customEmotes);
   return {
+    ai: normalizeAiConfig(r.ai),
     version: 1,
     enabledOnStart: bool(r.enabledOnStart, 'enabledOnStart'),
     trigger: pingTrigger,
@@ -277,7 +281,7 @@ export function mergeSettings(current: Settings, patch: Partial<Settings>, platf
  */
 export function rendererPatch(raw: unknown): Partial<Settings> {
   if (!isObj(raw)) return {};
-  const { customEmotes: _emotes, updateNotifiedVersion: _notified, ...patch } = raw;
+  const { customEmotes: _emotes, updateNotifiedVersion: _notified, ai: _ai, ...patch } = raw;
   return patch as Partial<Settings>;
 }
 

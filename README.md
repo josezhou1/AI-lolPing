@@ -1,5 +1,18 @@
 <h1 align="center"><img src="assets/textures/generic_ping.png" width="56" alt=""><br>lolPing</h1>
 
+This AI-lolPing build brings **AI chat**, model services, countdowns and app settings into one window.
+Use the sidebar to switch pages and configure OpenAI-compatible model profiles.
+Select a vision-capable profile for **Enemy Missing**: it sends the marked monitor's full screenshot to that profile,
+then shows **On My Way** at the original location after a successful answer. Screenshots remain in memory only;
+local history keeps text answers and source links. Follow-up messages use text context after the screenshot is released.
+**Danger** cancels this app's AI work and pauses it until resumed in Settings. **Need Vision** starts a 1–60 minute
+reminder (5 by default); click its notification or open AI chat's timers to adjust it. Timers end when the app exits.
+
+AI network requests go only to the model API you configure. Optional keyword search contacts `api.tavily.com` using a
+separate key; screenshots are not sent to Tavily. Provider processing follows that service's data policy. Keys are
+encrypted using the operating system's credential protection. Room entry points and room networking are disabled in
+this build. See [the design document](docs/ai-ping-feature-design.zh-CN.md) for details.
+
 <p align="center">
   English | <a href="README.zh-CN.md">简体中文</a>
 </p>

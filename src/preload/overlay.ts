@@ -6,6 +6,7 @@ import {
 import type { PingId } from '../shared/pings';
 
 const api = {
+  routePings: true,
   on<C extends OverlayChannel>(channel: C, cb: (payload: OverlayEvents[C]) => void): void {
     if (!OVERLAY_CHANNELS.includes(channel)) throw new Error(`unknown overlay channel: ${channel}`);
     ipcRenderer.on(channel, (_event, payload: OverlayEvents[C]) => cb(payload));
