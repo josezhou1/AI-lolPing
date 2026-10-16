@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto';
 import {
-  AI_LIMITS, aiErrorCode, aiMinutes, isAiId, isAiRecord, isAiText, localAiUrl, normalizeAiConfig, normalizeAiHistory,
+  AI_LIMITS, aiErrorCode, aiMinutes, isAiId, isAiRecord, isAiText, localAiUrl, normalizeAiConfig, normalizeAiHistory, normalizeFeatureHotkey,
   validateAiPoint, validateAiProfile,
   type AiConfig, type AiConversation, type AiErrorCode, type AiMessage, type AiPoint, type AiSnapshot,
   type ModelProfile, type VisionTimer,
@@ -12,6 +12,7 @@ export const SEARCH_CREDENTIAL_ID = '__tavily_search';
 export interface AiServiceDependencies {
   getConfig(): AiConfig;
   updateConfig(config: AiConfig): void;
+  validateConfig?(config: AiConfig): void;
   credentials: AiCredentialStore;
   history: AiHistoryStore;
   fetch?: typeof fetch;
@@ -113,10 +114,14 @@ export class AiService {
     if ('profiles' in patch && (!Array.isArray(patch.profiles) || patch.profiles.length > AI_LIMITS.profiles
       || patch.profiles.some((profile: unknown) => !validateAiProfile(profile)
         || (isAiRecord(profile) && profile.id === SEARCH_CREDENTIAL_ID)))) throw new Error('ai_invalid_input');
-    if ((['paused', 'searchEnabled'] as const).some((key) => key in patch && typeof patch[key] !== 'boolean')) {
+    if ((['paused', 'searchEnabled', 'recognitionEnabled', 'timersEnabled'] as const).some((key) => key in patch && typeof patch[key] !== 'boolean')) {
       throw new Error('ai_invalid_input');
     }
+    for (const key of ['recognitionHotkey', 'timersHotkey'] as const) {
+      if (key in patch && patch[key] !== null && !normalizeFeatureHotkey(patch[key])) throw new Error('ai_invalid_input');
+    }
     const config = normalizeAiConfig({ ...this.config(), ...patch });
+    this.dependencies.validateConfig?.(config);
     this.dependencies.updateConfig(config);
     if (config.paused) {
       for (const job of this.jobs.values()) this.cancel(job);

@@ -2,11 +2,19 @@
 
 This AI-lolPing build brings **AI chat**, model services, countdowns and app settings into one window.
 Use the sidebar to switch pages and configure OpenAI-compatible model profiles.
-Select a vision-capable profile for **Enemy Missing**: it sends the marked monitor's full screenshot to that profile,
+Enable **AI recognition** and select a vision-capable profile for **Enemy Missing**: it sends the marked monitor's
+full screenshot to that profile,
 then shows **On My Way** at the original location after a successful answer. Screenshots remain in memory only;
 local history keeps text answers and source links. Follow-up messages use text context after the screenshot is released.
-**Danger** cancels this app's AI work and pauses it until resumed in Settings. **Need Vision** starts a 1–60 minute
+**Danger** cancels this app's AI work and pauses it until resumed in Settings. When **Countdown** is on,
+**Need Vision** starts a 1–60 minute
 reminder (5 by default); click its notification or open AI chat's timers to adjust it. Timers end when the app exits.
+
+**AI recognition** and **Countdown** have separate switches in the sidebar and **Model services**. Both start off each
+time lolPing launches. Switch either one on manually, or set its own global toggle shortcut in **Model services**;
+shortcuts are saved across restarts and can be changed or cleared. A shortcut must include Ctrl, Alt or Win
+(⌃, ⌥ or ⌘ on a Mac); occupied or conflicting shortcuts are rejected. With a switch off, its pings still appear
+normally but do not start that automation. Turning Countdown off leaves existing reminders running.
 
 AI network requests go only to the model API you configure. Optional keyword search contacts `api.tavily.com` using a
 separate key; screenshots are not sent to Tavily. Provider processing follows that service's data policy. Keys are
@@ -78,6 +86,7 @@ Updating from v0.4 or earlier: download the new version by hand once. From v0.5 
 | Emote | Hold **Ctrl**, drag, and let go on an emote |
 | Cancel | Let go in the centre, right-click, or press **Esc** |
 | Pause or resume pinging | **Ctrl + Alt + P** |
+| Turn AI recognition or countdowns on or off | Use its sidebar switch, or set a separate shortcut in **Model services** |
 | Open settings | Click the tray icon |
 | Quit, or restart the input helper | Right-click the tray icon |
 

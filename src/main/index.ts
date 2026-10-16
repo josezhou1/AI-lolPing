@@ -419,6 +419,7 @@ function start(): void {
     retryHelper: startHelper,
     setCapturing: (on) => {
       capturing = on;
+      ai.setCapturing(on);
       bridge.send({ type: 'suspend', on });
     },
     openAccessibility: () => {
@@ -447,6 +448,7 @@ function start(): void {
   onSettingsWindowGone(() => {
     if (!capturing) return;
     capturing = false;
+    ai.setCapturing(false);
     bridge.send({ type: 'suspend', on: false });
   });
 

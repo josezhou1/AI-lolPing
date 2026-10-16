@@ -1,3 +1,4 @@
+import { HOTKEY_PRIMARY_MODS, hotkeyToAccelerator, type Hotkey } from './keys';
 import type { LanguagePref } from './i18n';
 import type { Platform } from './platform';
 
@@ -14,6 +15,10 @@ export interface AiConfig {
   defaultChatProfileId: string | null;
   defaultVisionProfileId: string | null;
   paused: boolean;
+  recognitionEnabled: boolean;
+  timersEnabled: boolean;
+  recognitionHotkey: Hotkey | null;
+  timersHotkey: Hotkey | null;
   visionMinutes: number;
   searchEnabled: boolean;
 }
@@ -43,7 +48,7 @@ export interface AiSnapshot {
 }
 
 export const AI_ERRORS = [
-  'ai_invalid_input', 'ai_profile_required', 'ai_vision_profile_required', 'ai_key_required', 'ai_paused',
+  'ai_hotkey_conflict', 'ai_invalid_input', 'ai_profile_required', 'ai_vision_profile_required', 'ai_key_required', 'ai_paused',
   'ai_capacity', 'ai_busy', 'ai_not_found', 'ai_closed', 'ai_cancelled', 'ai_timeout', 'ai_network_error',
   'ai_auth_failed', 'ai_rate_limited', 'ai_provider_error', 'ai_invalid_response', 'ai_response_too_large',
   'ai_secure_storage_unavailable', 'ai_storage_failed', 'ai_capture_failed', 'ai_display_missing',
@@ -55,7 +60,8 @@ export const AI_LIMITS = { profiles: 20, conversations: 100, messages: 100, cont
 const utf8Encoder = new TextEncoder();
 const jsonBytes = (value: unknown): number => utf8Encoder.encode(JSON.stringify(value)).byteLength;
 export const DEFAULT_AI_CONFIG: AiConfig = { profiles: [], defaultChatProfileId: null,
-  defaultVisionProfileId: null, paused: false, visionMinutes: 5, searchEnabled: false };
+  defaultVisionProfileId: null, paused: false, recognitionEnabled: false, timersEnabled: false,
+  recognitionHotkey: null, timersHotkey: null, visionMinutes: 5, searchEnabled: false };
 
 export const isAiRecord = (value: unknown): value is Record<string, unknown> =>
   typeof value === 'object' && value !== null && !Array.isArray(value);
@@ -111,6 +117,14 @@ export function validateAiProfile(raw: unknown): ModelProfile | null {
 export const aiMinutes = (value: unknown, fallback = 5): number =>
   typeof value === 'number' && Number.isFinite(value) ? Math.min(60, Math.max(1, Math.round(value))) : fallback;
 
+export function normalizeFeatureHotkey(raw: unknown): Hotkey | null {
+  if (!isAiRecord(raw) || typeof raw.mods !== 'number' || !Number.isInteger(raw.mods)
+    || raw.mods < 1 || raw.mods > 15 || !(raw.mods & HOTKEY_PRIMARY_MODS)
+    || typeof raw.vk !== 'number' || !Number.isInteger(raw.vk) || raw.vk < 1 || raw.vk > 254) return null;
+  const key = { mods: raw.mods, vk: raw.vk };
+  return hotkeyToAccelerator(key) ? key : null;
+}
+
 export function normalizeAiConfig(raw: unknown): AiConfig {
   const value = isAiRecord(raw) ? raw : {};
   const profiles: ModelProfile[] = [];
@@ -122,6 +136,9 @@ export function normalizeAiConfig(raw: unknown): AiConfig {
     defaultChatProfileId: profiles.some((p) => p.id === value.defaultChatProfileId) ? String(value.defaultChatProfileId) : null,
     defaultVisionProfileId: profiles.some((p) => p.id === value.defaultVisionProfileId && p.supportsVision)
       ? String(value.defaultVisionProfileId) : null,
+    recognitionEnabled: value.recognitionEnabled === true, timersEnabled: value.timersEnabled === true,
+    recognitionHotkey: normalizeFeatureHotkey(value.recognitionHotkey),
+    timersHotkey: normalizeFeatureHotkey(value.timersHotkey),
     paused: value.paused === true, visionMinutes: aiMinutes(value.visionMinutes), searchEnabled: value.searchEnabled === true };
 }
 

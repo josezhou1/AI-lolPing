@@ -5,6 +5,7 @@ import { AI_LIMITS, type AiConversation, type AiSnapshot, type VisionTimer } fro
 import { resolveLang, strings, type Strings } from '../../shared/i18n';
 import { aiApi, errorCode, validMinutes } from './api';
 import { ModelSettings } from './ModelSettings';
+import { FeatureSwitches } from './FeatureSwitches';
 import { useAiState } from './useAiState';
 import { App as SettingsApp } from '../settings/App';
 import { conversationTitle, syncTimerDraft, timerDraft, conversationDraftReducer } from './viewState';
@@ -79,6 +80,7 @@ export function App() {
           </div>)}
           {snapshot && !snapshot.conversations.length && <p className="ai-help">{t.aiNoConversations}</p>}
         </div>
+        {snapshot && <FeatureSwitches snapshot={snapshot} t={t} compact />}
         {snapshot && <p className="ai-activity" role="status">{t.aiActivity(
           snapshot.conversations.filter((item) => item.status === 'running').length,
           snapshot.conversations.filter((item) => item.status === 'queued').length)}</p>}

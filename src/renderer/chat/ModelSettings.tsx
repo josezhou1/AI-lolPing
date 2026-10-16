@@ -4,6 +4,7 @@ import { AI_LIMITS, validateAiProfile, type AiConfig, type AiSnapshot, type Mode
 import type { Strings } from '../../shared/i18n';
 import { aiApi, errorCode, validMinutes } from './api';
 import { useAiState } from './useAiState';
+import { FeatureSwitches } from './FeatureSwitches';
 import { profileEditorReducer, modelChoicesIdentity, modelChoicesReducer, type ProfileEditorState } from './viewState';
 import './model-settings.css';
 
@@ -30,6 +31,7 @@ export function ModelSettings({ snapshot, t }: { snapshot: AiSnapshot; t: String
   };
   const configure = (patch: Partial<AiConfig>) => void run(() => aiApi.configure(patch));
   return <div className="ai-settings">
+    <FeatureSwitches snapshot={snapshot} t={t} />
     <div className="ai-toolbar"><Button appearance="primary" onClick={() => void run(() => aiApi.openChat())}>{t.aiChat}</Button>
       <Switch checked={config.paused} label={t.aiPaused} disabled={busy}
         onChange={(_, data) => configure({ paused: data.checked })} /></div>

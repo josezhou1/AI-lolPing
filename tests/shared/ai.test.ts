@@ -3,9 +3,19 @@ import { normalizeAiConfig, normalizeAiHistory, normalizeSearchSources, validAiU
 import { normalizeSettings } from '../../src/shared/settings';
 
 describe('AI validation', () => {
+  it('keeps automation switches independent and normalizes custom shortcuts', () => {
+    const config = normalizeAiConfig({ recognitionEnabled: true, recognitionHotkey: { mods: 3, vk: 73 },
+      timersHotkey: { mods: 0, vk: 84 } });
+    expect(config.recognitionEnabled).toBe(true);
+    expect(config.timersEnabled).toBe(false);
+    expect(config.recognitionHotkey).toEqual({ mods: 3, vk: 73 });
+    expect(config.timersHotkey).toBeNull();
+  });
+
   it('defaults old settings and strips keys from profiles', () => {
     expect(normalizeSettings({}).ai).toEqual({ profiles: [], defaultChatProfileId: null,
-      defaultVisionProfileId: null, paused: false, visionMinutes: 5, searchEnabled: false });
+      defaultVisionProfileId: null, paused: false, visionMinutes: 5, searchEnabled: false,
+      recognitionEnabled: false, timersEnabled: false, recognitionHotkey: null, timersHotkey: null });
     const ai = normalizeAiConfig({ profiles: [{ id: 'p', name: 'Test', baseUrl: 'https://example.com/v1',
       model: 'model', supportsVision: false, apiKey: 'secret' }], defaultChatProfileId: 'p',
       defaultVisionProfileId: 'p', visionMinutes: 90 });

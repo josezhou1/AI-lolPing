@@ -1,0 +1,11 @@
+.ai-feature-controls { display: flex; flex-direction: column; gap: 12px; margin-bottom: 16px; }
+.ai-feature { border: 1px solid var(--colorNeutralStroke2); border-radius: 8px; padding: 12px 16px; background: var(--colorNeutralBackground1); }
+.ai-feature-row { display: flex; align-items: center; gap: 10px; }
+.ai-feature-row > svg { flex-shrink: 0; color: var(--colorNeutralForeground2); }
+.ai-feature-title { flex: 1; font-weight: 600; }
+.ai-feature-shortcut { display: flex; align-items: center; justify-content: flex-end; gap: 8px; }
+.ai-feature-shortcut > span { flex: 1; font-size: 12px; color: var(--colorNeutralForeground2); }
+.ai-feature-controls.compact { gap: 4px; margin: 8px 0 0; }
+.compact .ai-feature { border: 0; padding: 4px 8px; background: transparent; }
+.compact .ai-feature-row { gap: 8px; }
+.compact .ai-feature-title { font-size: 13px; font-weight: 400; }

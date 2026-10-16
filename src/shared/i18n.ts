@@ -16,6 +16,15 @@ export function resolveLang(pref: LanguagePref, locale: string): Lang {
 }
 
 const en = {
+  aiRecognition: 'AI recognition',
+  aiCountdown: 'Countdown',
+  aiFeatureHelp: 'Off on each launch. Enable manually or with your shortcut.',
+  aiRecognitionHelp: 'Enemy Missing pings analyze the marked screen.',
+  aiCountdownHelp: 'Need Vision pings start a countdown. Existing timers continue when off.',
+  aiFeatureShortcut: 'Toggle shortcut',
+  aiShortcutUnset: 'Set shortcut',
+  aiShortcutClear: 'Clear',
+
   aiChat: 'AI chat',
   aiTimers: 'Countdown reminders',
   aiTimerNotice: (minutes: number) => `Reminder in ${minutes} minutes. Click to adjust.`,
@@ -87,6 +96,7 @@ const en = {
   aiLoading: 'Loading…',
   aiWorking: 'Working…',
   aiErrors: {
+    ai_hotkey_conflict: 'Shortcut unavailable or conflicts with another control. Choose another.',
     ai_invalid_input: 'Check the values and try again.', ai_profile_required: 'Choose a chat model service first.',
     ai_vision_profile_required: 'Choose a screen model that supports images first.', ai_key_required: 'Save an API key for this service.',
     ai_paused: 'AI is paused. Resume in Model services.', ai_capacity: 'The AI queue is full. Wait for a task to finish.',
@@ -361,6 +371,15 @@ const en = {
 export type Strings = typeof en;
 
 const zh: Strings = {
+  aiRecognition: 'AI 识别',
+  aiCountdown: '倒计时',
+  aiFeatureHelp: '每次启动默认关闭，可手动开启或使用自定义快捷键切换。',
+  aiRecognitionHelp: '开启后，“敌人消失”标记触发屏幕识别。',
+  aiCountdownHelp: '开启后，“需要视野”标记创建倒计时；关闭后已有倒计时继续运行。',
+  aiFeatureShortcut: '开关快捷键',
+  aiShortcutUnset: '设置快捷键',
+  aiShortcutClear: '清除',
+
   aiChat: 'AI 对话', aiTimers: '倒计时提醒',
   aiTimerNotice: (minutes: number) => `${minutes} 分钟后提醒，点击可调整。`,
   aiPausedNotice: 'AI 已暂停，可在模型服务中恢复。', aiModels: '模型服务', aiNew: '新建对话',
@@ -389,6 +408,7 @@ const zh: Strings = {
   aiAdjust: '调整', aiMinutes: '分钟', aiTimerHelp: '调整后从当前时间重新计时。', aiTimerDefaults: '修改默认倒计时',
   aiMinuteValidation: '请输入 1–60 的整数。', aiLoading: '加载中…', aiWorking: '处理中…',
   aiErrors: {
+    ai_hotkey_conflict: '快捷键已被占用或与其他操作冲突，请更换。',
     ai_invalid_input: '请检查填写的内容后重试。', ai_profile_required: '请先选择聊天模型服务。',
     ai_vision_profile_required: '请先选择支持图片的屏幕模型。', ai_key_required: '请先保存该服务的 API 密钥。',
     ai_paused: 'AI 已暂停，可在模型服务中恢复。', ai_capacity: 'AI 队列已满，请等待任务完成。',

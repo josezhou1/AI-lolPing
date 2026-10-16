@@ -21,13 +21,17 @@
 
 关闭窗口不取消任务。成功时窗口以非激活方式显示，不抢占键盘焦点；主动从托盘打开时激活。渲染层没有 Node 权限，网络与凭据都由主进程管理。
 
+## 功能开关
+
+AI 识别和倒计时在左侧栏及模型服务中各有独立的 Fluent 开关，每次启动均关闭。两者可单独配置全局快捷键，重启保留快捷键；录入时暂停已有快捷键，拒绝与信号开关、触发键、另一功能或其他程序冲突的组合。快捷键不可用不阻止手动开关。关闭功能只阻止新的自动化，已有倒计时继续运行，原信号的图标和声音不变。
+
 ## 标记交互
 
 | 标记 | 动作 |
 | --- | --- |
-| 敌人消失 `missing` | 截取标记所在显示器，创建独立分析会话；成功后在原坐标生成正在赶来 `omw`。 |
+| 敌人消失 `missing` | AI 识别开启时，截取标记所在显示器，创建独立分析会话；成功后在原坐标生成正在赶来 `omw`。 |
 | 危险 `danger` | 中断本应用 AI 请求，停止后续步骤，清空排队任务，持久保存暂停状态，手动恢复。 |
-| 需要视野 `needvision` | 立即倒计时；到期在原坐标生成敌方视野 `enemyvision`。 |
+| 需要视野 `needvision` | 倒计时开启时，立即倒计时；到期在原坐标生成敌方视野 `enemyvision`。 |
 | 全力进攻 `allin` | 普通 ping，自动化行为待定。 |
 
 只有本机手动标记触发自动化，设置预览和自动生成的图标不触发，防止递归。截图在新图标显示前采集，并临时隐藏覆盖层。使用显示器 ID 精确匹配，失效时不使用其他显示器代替。发送整屏截图、相对标记位置及焦点指令；屏幕文字视为数据，不能授权执行程序或改变设置。
@@ -90,3 +94,9 @@ IPC 包括：快照/订阅、配置 CRUD、保存凭据、模型列表/测试、
 - [Electron desktopCapturer](https://www.electronjs.org/docs/latest/api/desktop-capturer)
 - [Electron safeStorage](https://www.electronjs.org/docs/latest/api/safe-storage)
 - [Tavily Search](https://docs.tavily.com/documentation/api-reference/endpoint/search)
+
+### 独立开关验证记录（2026-10-16）
+
+- `npm run typecheck`、`npm test`（61 个文件、896 项测试）、`npm run test:helper`（444 项）及 `npm run build` 均通过。
+- Windows 使用隔离配置运行 `npm run dev`，确认即使上次保存了开启状态，启动后两个开关仍关闭；分别切换不影响另一功能，快捷键可保存，冲突组合被拒绝。
+- 快捷键不可用时手动开关仍可用、录入时释放与恢复绑定、关闭开关后已有计时仍到期均有回归测试。macOS 和 Linux 未作本机运行验证。

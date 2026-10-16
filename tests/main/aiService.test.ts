@@ -8,7 +8,8 @@ const image = 'data:image/png;base64,AAAA';
 function setup(fetcher: typeof fetch = async () => Response.json({ choices: [{ message: { content: 'Answer' } }] }),
   deleting?: (id: string) => Promise<void>) {
   let config: AiConfig = { profiles: [profile], defaultChatProfileId: 'p', defaultVisionProfileId: 'p',
-    paused: false, visionMinutes: 5, searchEnabled: false };
+    paused: false, visionMinutes: 5, searchEnabled: false, recognitionEnabled: false, timersEnabled: false,
+    recognitionHotkey: null, timersHotkey: null };
   let saved: AiConversation[] = [];
   const keys = new Map([['p', 'key']]);
   let time = 1000;
@@ -25,6 +26,19 @@ function setup(fetcher: typeof fetch = async () => Response.json({ choices: [{ m
 }
 
 describe('AiService', () => {
+  it('keeps existing reminders running after the countdown switch is turned off', async () => {
+    const f = setup();
+    await f.service.configure({ timersEnabled: true, visionMinutes: 1 });
+    const timer = f.service.addTimer({ displayId: 1, x: 10, y: 10, width: 100, height: 100 });
+    await f.service.configure({ timersEnabled: false, recognitionEnabled: true });
+    f.advance(60000); f.service.tick();
+    expect(f.fired).toEqual([timer.id]);
+    expect(f.service.snapshot().config.recognitionEnabled).toBe(true);
+    expect(f.service.snapshot().timers).toEqual([]);
+    await f.service.close();
+  });
+
+
   it('coalesces a burst of stream tokens into one running snapshot', async () => {
     vi.useFakeTimers();
     let stream: ReadableStreamDefaultController<Uint8Array> | undefined;

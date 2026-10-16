@@ -6,7 +6,7 @@ import { hotkeyLabel, hotkeyToAccelerator, type Hotkey } from '../shared/keys';
 import { pingById, type PingId } from '../shared/pings';
 import type { Platform } from '../shared/platform';
 import type { JoinResult, RoomState } from '../shared/room';
-import { patchClashes, rendererPatch } from '../shared/settings';
+import { patchClashes, rendererPatch, triggerVk } from '../shared/settings';
 import type { UpdateState } from '../shared/update';
 import { emoteFileFrom, type EmoteLibrary } from './emoteLibrary';
 import type { SettingsStore } from './settingsStore';
@@ -80,6 +80,12 @@ export function registerSettingsIpc(d: SettingsIpcDeps): void {
     const patch = rendererPatch(raw);
     if (patchClashes(d.store.get(), patch, d.platform)) {
       return { ok: false, error: d.text().emoteKeyClash, settings: d.store.get() };
+    }
+    const candidate = { ...d.store.get(), ...patch };
+    const featureKeys = [candidate.ai.recognitionHotkey, candidate.ai.timersHotkey].filter((key) => key !== null);
+    if (featureKeys.some((key) => (key.mods === candidate.toggleHotkey.mods && key.vk === candidate.toggleHotkey.vk)
+      || key.vk === triggerVk(candidate.trigger) || key.vk === triggerVk(candidate.emoteTrigger))) {
+      return { ok: false, error: d.text().aiErrors.ai_hotkey_conflict, settings: d.store.get() };
     }
     if (patch.toggleHotkey) {
       const error = hotkeyConflict(patch.toggleHotkey, d.store.get().toggleHotkey, d.text(), d.platform);

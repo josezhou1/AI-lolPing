@@ -1,9 +1,10 @@
-import { app, desktopCapturer, Notification, powerMonitor, safeStorage, screen } from 'electron';
-import { aiErrorCode, type AiPoint, type AiSnapshot, type VisionTimer } from '../shared/ai';
+import { app, desktopCapturer, globalShortcut, Notification, powerMonitor, safeStorage, screen } from 'electron';
+import { aiErrorCode, normalizeAiConfig, type AiPoint, type AiSnapshot, type VisionTimer } from '../shared/ai';
 import { AI_CH } from '../shared/aiChannels';
 import type { Strings } from '../shared/i18n';
 import { registerAiIpc } from './aiIpc';
 import { AiService } from './aiService';
+import { AiShortcuts } from './aiShortcuts';
 import { FileAiCredentialStore, FileAiHistoryStore } from './aiStorage';
 import { aiWindow, openAiWindow } from './aiWindow';
 import { pageUrl, PLATFORM } from './paths';
@@ -15,6 +16,10 @@ import { openSettingsWindow } from './settingsWindow';
 /** Wires desktop-only operations to the testable AI task service. */
 export function startAiIntegration(store: SettingsStore, overlays: OverlayManager, text: () => Strings) {
   let closed = false;
+  store.update({ ai: normalizeAiConfig({ ...store.get().ai, recognitionEnabled: false, timersEnabled: false }) });
+  const shortcuts = new AiShortcuts(globalShortcut, () => store.get(), (flag) => {
+    void service.configure({ [flag]: !store.get().ai[flag] }).catch(failure);
+  });
   const notifications = new Set<Notification>();
   const locale = () => ({ language: store.get().language, locale: app.getLocale(), platform: PLATFORM });
   const consumers = () => [aiWindow()].filter((w) => w && !w.webContents.isDestroyed());
@@ -35,6 +40,7 @@ export function startAiIntegration(store: SettingsStore, overlays: OverlayManage
   };
   const service = new AiService({
     getConfig: () => store.get().ai,
+    validateConfig: (config) => shortcuts.update(config),
     updateConfig: (config) => { store.update({ ai: config }); },
     credentials: new FileAiCredentialStore(store.dir, safeStorage),
     history: new FileAiHistoryStore(store.dir),
@@ -73,10 +79,10 @@ export function startAiIntegration(store: SettingsStore, overlays: OverlayManage
       void service.configure({ paused: true }).then(() => {
         overlays.toast(text().aiChat, text().aiPausedNotice);
       }).catch(failure);
-    } else if (ping.id === 'needvision') {
+    } else if (ping.id === 'needvision' && store.get().ai.timersEnabled) {
       service.addTimer(point);
       notifyTimer(store.get().ai.visionMinutes);
-    } else if (ping.id === 'missing') {
+    } else if (ping.id === 'missing' && store.get().ai.recognitionEnabled) {
       return service.analyze(point, (signal) => capture.capture({ id: display.id, width: display.bounds.width,
         height: display.bounds.height, scale: display.scaleFactor }, signal)).catch(failure);
     }
@@ -95,14 +101,19 @@ export function startAiIntegration(store: SettingsStore, overlays: OverlayManage
     openSettings: () => { openSettingsWindow(); },
     locale,
   });
+  try { shortcuts.update(store.get().ai, true); } catch (error) { failure(error); }
   const onResume = (): void => service.tick();
   const clock = setInterval(() => service.tick(), 1000);
   powerMonitor.on('resume', onResume);
   store.on('change', changedSettings);
   return {
     service,
+    setCapturing(on: boolean): void {
+      try { shortcuts.setCapturing(on); } catch (error) { failure(error); }
+    },
     async close(): Promise<void> {
       closed = true;
+      shortcuts.close();
       clearInterval(clock);
       powerMonitor.off('resume', onResume);
       store.off('change', changedSettings);
