@@ -21,6 +21,24 @@ separate key; screenshots are not sent to Tavily. Provider processing follows th
 encrypted using the operating system's credential protection. Room entry points and room networking are disabled in
 this build. See [the design document](docs/ai-ping-feature-design.zh-CN.md) for details.
 
+## AI switches and shortcuts
+
+### Switch features from the main window
+
+<p align="center"><img src="docs/media/ai-switches.png" width="880" alt="AI-lolPing main window with AI recognition and Countdown both switched off in the sidebar"></p>
+
+Click **AI recognition** or **Countdown** in the sidebar to switch that feature on or off. Both start off each time
+lolPing launches. With either switch off, ordinary pings still appear.
+
+### Set a separate shortcut for each feature
+
+<p align="center"><img src="docs/media/ai-shortcuts.png" width="880" alt="Model services with AI recognition on, Countdown off, and separate toggle shortcut controls for both features"></p>
+
+Open **Model services**, click **Set shortcut** or the current key combination, then press your preferred combination.
+Click **Clear** to remove a binding. Ctrl + Alt + Shift + F9 / F10 in the screenshot are examples, not defaults.
+Only AI recognition is on in this example; Countdown stays off. With AI recognition on, **Enemy Missing** analyzes the
+marked screen. With Countdown on, **Need Vision** starts a reminder. Switching Countdown off keeps existing reminders running.
+
 <p align="center">
   English | <a href="README.zh-CN.md">简体中文</a>
 </p>
